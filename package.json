@@ -1,0 +1,17 @@
+{
+  "name": "theonerec",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=web",
+    "dev:api": "cd apps/api && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "build:web": "npm run build --workspace=web",
+    "build:index": "cd apps/api && python scripts/build_index.py",
+    "test:api": "cd apps/api && pytest",
+    "test:e2e": "npm run test:e2e --workspace=web",
+    "lint": "npm run lint --workspace=web"
+  }
+}

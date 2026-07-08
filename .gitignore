@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+.next/
+out/
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ML artifacts (large)
+apps/api/artifacts/*.npy
+apps/api/artifacts/*.pkl
+apps/api/artifacts/*.parquet
+
+# Data
+data/
+*.csv
+
+# Env
+.env
+.env.local
+.env*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Testing
+coverage/
+.pytest_cache/
+playwright-report/
+test-results/
+
+# Misc
+*.log
+npm-debug.log*

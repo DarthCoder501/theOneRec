@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+:root {
+  --pirate-red: #BB353B;
+  --treasure-gold: #DEBC6E;
+  --ocean-blue: #506CB5;
+  --deep-sea: #0f1729;
+  --deep-sea-light: #1a2540;
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --text-primary: #f0f4ff;
+  --text-secondary: #a8b8d8;
+  --text-on-gold: #1a1a2e;
+  --focus-ring: #DEBC6E;
+  --background: var(--deep-sea);
+  --foreground: var(--text-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-pirate-red: var(--pirate-red);
+  --color-treasure-gold: var(--treasure-gold);
+  --color-ocean-blue: var(--ocean-blue);
+  --color-deep-sea: var(--deep-sea);
+  --font-sans: var(--font-geist-sans);
+}
+
+html {
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background: var(--deep-sea);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* WCAG 2.2 focus visible */
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Liquid glass panel */
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-panel-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel-animated::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(222, 188, 110, 0.4),
+    rgba(80, 108, 181, 0.3),
+    rgba(187, 53, 59, 0.3)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ocean-wave-drift,
+  .ocean-wave-heave,
+  .ocean-wave-foam-shimmer {
+    animation: none;
+  }
+
+  .ocean-ship-animated {
+    animation: none;
+  }
+}
+
+/* Ocean gradient background fallback */
+.ocean-bg {
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(80, 108, 181, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(187, 53, 59, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(222, 188, 110, 0.08) 0%, transparent 60%),
+    var(--deep-sea);
+}
+
+/* Animated ocean waves — rolling swell with glass UI palette */
+.ocean-waves {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ocean-horizon-glow {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  width: min(120vw, 1400px);
+  height: 28%;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(80, 108, 181, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse at 30% 90%, rgba(187, 53, 59, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 85%, rgba(222, 188, 110, 0.1) 0%, transparent 45%);
+  pointer-events: none;
+}
+
+.ocean-wave-layer {
+  position: absolute;
+  left: 0;
+  width: 200%;
+  height: auto;
+  will-change: transform;
+}
+
+.ocean-wave-heave {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  animation: ocean-wave-heave var(--wave-heave-duration, 6s) ease-in-out infinite alternate;
+  animation-delay: var(--wave-heave-delay, 0s);
+}
+
+.ocean-wave-drift {
+  animation: ocean-wave-drift var(--wave-drift-duration, 24s) linear infinite;
+  animation-delay: var(--wave-drift-delay, 0s);
+}
+
+.ocean-wave-foam-crest {
+  position: absolute;
+  left: 0;
+  width: 200%;
+  will-change: transform, opacity;
+}
+
+.ocean-wave-foam-shimmer {
+  animation:
+    ocean-wave-drift 16s linear infinite,
+    ocean-wave-foam-glow 5s ease-in-out infinite alternate;
+}
+
+.ocean-wave-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes ocean-wave-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes ocean-wave-heave {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--wave-heave-amount, -8px));
+  }
+}
+
+@keyframes ocean-wave-foam-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+
+/* Pirate ship — fixed to viewport corner so it stays visible at all sizes */
+.ocean-ship-container {
+  position: absolute;
+  bottom: clamp(1.5rem, 6vh, 4rem);
+  right: clamp(0.75rem, 4vw, 3rem);
+  width: clamp(120px, 18vw, 240px);
+  z-index: 1;
+}
+
+.ocean-ship {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
+}
+
+.ocean-ship-animated {
+  animation: ocean-ship-bob 4.8s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes ocean-ship-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  35% {
+    transform: translateY(-7px) rotate(0.5deg);
+  }
+  65% {
+    transform: translateY(-12px) rotate(1.25deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .ocean-ship-container {
+    width: clamp(100px, 28vw, 140px);
+    bottom: 1rem;
+    right: 0.5rem;
+    opacity: 0.85;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ocean-ship-container {
+    bottom: clamp(2rem, 8vh, 5rem);
+    right: clamp(2rem, 6vw, 5rem);
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
