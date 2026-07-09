@@ -66,6 +66,8 @@ export interface SavedAnime {
   created_at: string;
 }
 
+export type WatchlistStatus = "planned" | "watching" | "finished";
+
 export interface WatchlistItem {
   id: string;
   user_id: string;
@@ -73,6 +75,7 @@ export interface WatchlistItem {
   name: string;
   notes: string | null;
   watched: boolean;
+  status?: WatchlistStatus;
   sort_order: number;
   created_at: string;
 }

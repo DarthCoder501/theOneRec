@@ -135,6 +135,8 @@ export function RecommendPanel({ isMember, queriesRemaining }: RecommendPanelPro
       user_id: user.id,
       mal_id: anime.mal_id,
       name: anime.name,
+      status: "planned",
+      watched: false,
     });
     setPendingWatchlistId(null);
 
