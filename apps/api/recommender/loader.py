@@ -1,18 +1,11 @@
-"""Load precomputed ML artifacts at startup."""
+"""Load precomputed ML artifacts on first request (lazy)."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import google.generativeai as genai
-import joblib
-import numpy as np
-import pandas as pd
-from sentence_transformers import CrossEncoder, SentenceTransformer
-
 from config import settings
-from recommender.engine import create_recommendation_system
 
 _recommender = None
 
@@ -25,6 +18,14 @@ def get_recommender():
 
 
 def _load_recommender():
+    import google.generativeai as genai
+    import joblib
+    import numpy as np
+    import pandas as pd
+    from sentence_transformers import CrossEncoder, SentenceTransformer
+
+    from recommender.engine import create_recommendation_system
+
     artifacts = settings.artifacts_path
     anime_df = pd.read_parquet(artifacts / "anime_df.parquet")
     final_features = np.load(artifacts / "final_features.npy")

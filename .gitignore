@@ -14,10 +14,8 @@ __pycache__/
 .venv/
 venv/
 
-# ML artifacts (large)
-apps/api/artifacts/*.npy
-apps/api/artifacts/*.pkl
-apps/api/artifacts/*.parquet
+# ML artifacts — tracked via Git LFS (see .gitattributes)
+# Do not add apps/api/artifacts/*.npy|*.pkl|*.parquet here
 
 # Data
 data/

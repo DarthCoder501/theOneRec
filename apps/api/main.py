@@ -1,6 +1,6 @@
 """theOneRec FastAPI service."""
 
-from contextlib import asynccontextmanager
+import logging
 
 import pandas as pd
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -11,15 +11,11 @@ from config import settings
 from rate_limit import check_and_increment, get_remaining
 from recommender.loader import artifacts_exist, get_recommender
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    if artifacts_exist():
-        get_recommender()
-    yield
-
-
-app = FastAPI(title="theOneRec API", version="0.1.0", lifespan=lifespan)
+# Models load lazily on first /recommend request so the server binds to $PORT immediately.
+app = FastAPI(title="theOneRec API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
