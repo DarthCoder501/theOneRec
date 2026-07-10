@@ -26,7 +26,16 @@ export async function fetchRecommendations(
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || data.detail || `Recommendation failed: ${res.status}`);
+    return {
+      recommendations: [],
+      error:
+        data.error ||
+        data.detail ||
+        (res.status === 502 || res.status === 504
+          ? "The recommendation service is waking up. Wait a minute and try again."
+          : `Recommendation failed (${res.status}).`),
+      meta: data.meta ?? { tier: token ? "member" : "guest" },
+    };
   }
 
   return res.json();

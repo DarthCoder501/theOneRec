@@ -1,4 +1,4 @@
-# ML artifacts — too large for regular git; required for Render Docker builds
+# ML artifacts — too large for regular git; used by Modal deploys (uploaded from local)
 apps/api/artifacts/*.npy filter=lfs diff=lfs merge=lfs -text
 apps/api/artifacts/*.pkl filter=lfs diff=lfs merge=lfs -text
 apps/api/artifacts/*.parquet filter=lfs diff=lfs merge=lfs -text

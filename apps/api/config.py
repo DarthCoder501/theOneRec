@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     guest_max_results: int = 3
     member_max_results: int = 10
     gemini_model_id: str = "gemini-2.0-flash"  # env: GEMINI_MODEL_ID
+    # Full quality by default (Modal production uses 4GB RAM).
+    enable_cross_encoder: bool = True  # env: ENABLE_CROSS_ENCODER
+    preload_models: bool = True  # env: PRELOAD_MODELS
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -36,7 +36,7 @@ def main():
 
     print("Saving artifacts...")
     anime_df.to_parquet(artifacts_dir / "anime_df.parquet")
-    np.save(artifacts_dir / "final_features.npy", final_features)
+    np.save(artifacts_dir / "final_features.npy", final_features.astype(np.float32))
     joblib.dump(nn_model, artifacts_dir / "nn_model.pkl")
     joblib.dump(vectorizers, artifacts_dir / "vectorizers.pkl")
 

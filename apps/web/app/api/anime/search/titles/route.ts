@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRecommendApiUrl } from "@/lib/api-base";
+import { fetchRecommendUpstream } from "@/lib/upstream-api";
+
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q") ?? "";
   const limit = request.nextUrl.searchParams.get("limit") ?? "8";
 
   try {
-    const res = await fetch(
-      `${getRecommendApiUrl()}/anime/search/titles?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`,
-      { cache: "no-store" }
+    const res = await fetchRecommendUpstream(
+      `/anime/search/titles?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`
     );
 
     if (!res.ok) {

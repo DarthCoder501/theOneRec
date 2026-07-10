@@ -26,7 +26,10 @@ export async function GET(request: Request) {
   }
 
   if (!code) {
-    return authErrorRedirect(origin, "Missing auth code. Please try signing in again.");
+    return authErrorRedirect(
+      origin,
+      "Missing auth code. Please try signing in again.",
+    );
   }
 
   const cookieStore = await cookies();
@@ -47,7 +50,7 @@ export async function GET(request: Request) {
           });
         },
       },
-    }
+    },
   );
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);

@@ -15,24 +15,84 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 class AniRecs:
+    CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
     def __init__(
         self,
         anime_df: pd.DataFrame,
-        nn_model,
         final_features: np.ndarray,
         st_model: SentenceTransformer,
         feature_ranges: dict,
-        cross_encoder: CrossEncoder,
+        enable_cross_encoder: bool = False,
         gemini_model=None,
     ):
         self.anime_df = anime_df
-        self.nn_model = nn_model
         self.final_features = final_features
         self.st_model = st_model
         self.feature_ranges = feature_ranges
-        self.cross_encoder = cross_encoder
+        self.enable_cross_encoder = enable_cross_encoder
+        self._cross_encoder: CrossEncoder | None = None
         self.gemini_model = gemini_model
         self._prepare_lookup_sets()
+
+    def _get_cross_encoder(self) -> CrossEncoder:
+        if self._cross_encoder is None:
+            self._cross_encoder = CrossEncoder(self.CROSS_ENCODER_MODEL)
+        return self._cross_encoder
+
+    def _nearest_indices(self, query_vector: np.ndarray, n_neighbors: int) -> np.ndarray:
+        """Cosine kNN over mmap-backed features in chunks (never materialize the full matrix)."""
+        import heapq
+
+        n_rows = self.final_features.shape[0]
+        n = min(n_neighbors, n_rows)
+        if n <= 0:
+            return np.array([], dtype=int)
+
+        query = np.asarray(query_vector, dtype=np.float32).reshape(-1)
+        q_norm = float(np.linalg.norm(query)) + 1e-12
+        query = query / q_norm
+
+        # Min-heap of (similarity, index); keep top-n highest scores.
+        heap: list[tuple[float, int]] = []
+        chunk_size = 1024
+
+        for start in range(0, n_rows, chunk_size):
+            block = np.asarray(self.final_features[start : start + chunk_size], dtype=np.float32)
+            norms = np.linalg.norm(block, axis=1) + 1e-12
+            sims = (block @ query) / norms
+            for offset, score in enumerate(sims):
+                idx = start + offset
+                s = float(score)
+                if len(heap) < n:
+                    heapq.heappush(heap, (s, idx))
+                elif s > heap[0][0]:
+                    heapq.heapreplace(heap, (s, idx))
+
+        heap.sort(reverse=True)
+        return np.array([idx for _, idx in heap], dtype=int)
+
+    def _fallback_semantic_scores(
+        self,
+        user_input: str,
+        candidate_indices: list[int],
+        pooled_vector: np.ndarray | None,
+    ) -> np.ndarray:
+        """Synopsis-block cosine scores when cross-encoder is disabled to save RAM."""
+        syn_start, syn_end = self.feature_ranges["synopsis"]
+        idxs = np.asarray(candidate_indices, dtype=np.int64)
+        candidate_feats = np.asarray(
+            self.final_features[idxs, syn_start:syn_end], dtype=np.float32
+        )
+
+        if pooled_vector is not None:
+            query_vector = np.asarray(pooled_vector[:, syn_start:syn_end], dtype=np.float32)
+        else:
+            query_vector = self.st_model.encode([user_input], convert_to_numpy=True).astype(
+                np.float32, copy=False
+            )
+
+        return cosine_similarity(query_vector, candidate_feats)[0]
 
     def _prepare_lookup_sets(self):
         self.genres_set: set[str] = set()
@@ -241,6 +301,7 @@ class AniRecs:
 
         seed_names_list: list[str] = []
         target_indices: list[int] = []
+        pooled_vector: np.ndarray | None = None
 
         if intent.get("seed_names"):
             for name in intent["seed_names"]:
@@ -251,17 +312,23 @@ class AniRecs:
             if not target_indices:
                 return {"error": f"Could not find seed anime matching: {intent['seed_names']}"}
 
-            pooled = np.mean(self.final_features[target_indices], axis=0).reshape(1, -1)
-            _, indices = self.nn_model.kneighbors(
-                pooled, n_neighbors=min(200, len(self.anime_df))
+            pooled_vector = np.mean(self.final_features[target_indices], axis=0).reshape(1, -1)
+            neighbor_indices = self._nearest_indices(
+                pooled_vector, min(200, len(self.anime_df))
             )
             candidate_indices = [
-                idx for idx in indices[0] if idx in filtered_df.index and idx not in target_indices
+                idx for idx in neighbor_indices if idx in filtered_df.index and idx not in target_indices
             ]
         else:
-            query_emb = self.st_model.encode([user_input], convert_to_numpy=True)
+            query_emb = self.st_model.encode([user_input], convert_to_numpy=True).astype(
+                np.float32, copy=False
+            )
             syn_start, syn_end = self.feature_ranges["synopsis"]
-            synopsis_feats = self.final_features[filtered_df.index, syn_start:syn_end]
+            filtered_idxs = filtered_df.index.to_numpy(dtype=np.int64)
+            # Fancy-index only the synopsis columns for filtered rows (avoid full-row copies).
+            synopsis_feats = np.asarray(
+                self.final_features[filtered_idxs, syn_start:syn_end], dtype=np.float32
+            )
             if synopsis_feats.shape[1] == query_emb.shape[1]:
                 sims = cosine_similarity(query_emb, synopsis_feats)[0]
                 if np.max(sims) < 0.15:
@@ -280,7 +347,12 @@ class AniRecs:
             (user_input, str(self.anime_df.iloc[idx].get("sypnopsis", "")))
             for idx in candidate_indices
         ]
-        cross_scores = self.cross_encoder.predict(candidate_texts)
+        if self.enable_cross_encoder:
+            cross_scores = self._get_cross_encoder().predict(candidate_texts)
+        else:
+            cross_scores = self._fallback_semantic_scores(
+                user_input, candidate_indices, pooled_vector
+            )
         c_min, c_max = np.min(cross_scores), np.max(cross_scores)
         max_members_log = (
             self.anime_df["Members_log"].max() if "Members_log" in self.anime_df.columns else 15.0
@@ -353,8 +425,18 @@ class AniRecs:
 
 
 def create_recommendation_system(
-    anime_df, nn_model, final_features, st_model, feature_ranges, cross_encoder, gemini_model=None
+    anime_df,
+    final_features,
+    st_model,
+    feature_ranges,
+    enable_cross_encoder: bool = False,
+    gemini_model=None,
 ) -> AniRecs:
     return AniRecs(
-        anime_df, nn_model, final_features, st_model, feature_ranges, cross_encoder, gemini_model
+        anime_df,
+        final_features,
+        st_model,
+        feature_ranges,
+        enable_cross_encoder=enable_cross_encoder,
+        gemini_model=gemini_model,
     )

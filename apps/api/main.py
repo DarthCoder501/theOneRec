@@ -1,6 +1,8 @@
 """theOneRec FastAPI service."""
 
 import logging
+import threading
+from contextlib import asynccontextmanager
 
 import pandas as pd
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -14,8 +16,28 @@ from recommender.loader import artifacts_exist, get_recommender
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Models load lazily on first /recommend request so the server binds to $PORT immediately.
-app = FastAPI(title="theOneRec API", version="0.1.0")
+
+def _warmup_recommender() -> None:
+    try:
+        get_recommender()
+        logger.info("ML models preloaded successfully.")
+    except Exception:
+        logger.exception("Background ML preload failed")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.preload_models and artifacts_exist():
+        logger.info("Starting background ML preload...")
+        threading.Thread(target=_warmup_recommender, daemon=True).start()
+    elif artifacts_exist():
+        logger.info("ML preload disabled — models load on first /recommend request.")
+    else:
+        logger.warning("ML artifacts missing — /recommend will return 503.")
+    yield
+
+
+app = FastAPI(title="theOneRec API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -72,8 +94,15 @@ def recommend(
     max_k = settings.member_max_results if member else settings.guest_max_results
     top_k = min(body.top_k, max_k)
 
-    recommender = get_recommender()
-    result = recommender.process_user_query(body.query, top_k=top_k)
+    try:
+        recommender = get_recommender()
+        result = recommender.process_user_query(body.query, top_k=top_k)
+    except Exception:
+        logger.exception("Recommendation failed for query=%r", body.query)
+        raise HTTPException(
+            status_code=503,
+            detail="Recommendation engine failed to load. The service may be out of memory — try again shortly.",
+        ) from None
 
     if isinstance(result, dict) and "error" in result:
         return {

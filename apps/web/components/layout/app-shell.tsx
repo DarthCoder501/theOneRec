@@ -22,27 +22,33 @@ function AuthErrorBanner({ message }: { message: string }) {
         {isGoogleSecretError ? (
           <>
             <p>
-              <strong>Google Client Secret is invalid.</strong> Supabase auth logs show{" "}
-              <code className="text-xs">invalid_client: The provided client secret is invalid</code>.
-              Your app code is fine — fix this in the Supabase dashboard:
+              <strong>Google Client Secret is invalid.</strong> Supabase auth
+              logs show{" "}
+              <code className="text-xs">
+                invalid_client: The provided client secret is invalid
+              </code>
+              . Your app code is fine — fix this in the Supabase dashboard:
             </p>
             <ol className="list-decimal list-inside space-y-1 text-(--text-secondary)">
               <li>
-                Google Cloud Console → APIs &amp; Services → Credentials → open your{" "}
-                <strong>Web application</strong> OAuth client
+                Google Cloud Console → APIs &amp; Services → Credentials → open
+                your <strong>Web application</strong> OAuth client
               </li>
               <li>
                 Copy the <strong>Client ID</strong>. Reset and copy a fresh{" "}
                 <strong>Client Secret</strong> if unsure.
               </li>
               <li>
-                Supabase → Authentication → Providers → Google → paste both values (no
-                extra spaces) → Save
+                Supabase → Authentication → Providers → Google → paste both
+                values (no extra spaces) → Save
               </li>
               <li>
                 Supabase → Authentication → URL Configuration → Site URL:{" "}
-                <code className="text-xs">http://localhost:3000</code>, Redirect URL:{" "}
-                <code className="text-xs">http://localhost:3000/auth/callback</code>
+                <code className="text-xs">http://localhost:3000</code>, Redirect
+                URL:{" "}
+                <code className="text-xs">
+                  http://localhost:3000/auth/callback
+                </code>
               </li>
             </ol>
           </>
@@ -82,7 +88,10 @@ export function AppShell({
         onSignOut={handleSignOut}
       />
       {authError && <AuthErrorBanner message={authError} />}
-      <main id="main-content" className="relative mx-auto max-w-6xl flex-1 px-4 py-8">
+      <main
+        id="main-content"
+        className="relative mx-auto max-w-6xl flex-1 px-4 py-8"
+      >
         {children}
       </main>
       <Footer />
