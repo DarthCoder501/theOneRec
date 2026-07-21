@@ -143,11 +143,23 @@ export function ResultCard({
                   ? "On watchlist"
                   : "Watchlist"}
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onFeedback?.("up")} aria-label={`Thumbs up for ${anime.name}`}>
-              <ThumbsUp className="h-4 w-4" aria-hidden="true" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onFeedback?.("up")}
+              aria-label={`Thumbs up for ${anime.name}`}
+              className="text-treasure-gold hover:border-treasure-gold/60 hover:bg-treasure-gold/15"
+            >
+              <ThumbsUp className="size-5" strokeWidth={2.25} aria-hidden="true" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onFeedback?.("down")} aria-label={`Thumbs down for ${anime.name}`}>
-              <ThumbsDown className="h-4 w-4" aria-hidden="true" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onFeedback?.("down")}
+              aria-label={`Thumbs down for ${anime.name}`}
+              className="text-(--text-secondary) hover:border-pirate-red/60 hover:bg-pirate-red/15 hover:text-pirate-red"
+            >
+              <ThumbsDown className="size-5" strokeWidth={2.25} aria-hidden="true" />
             </Button>
           </>
         )}

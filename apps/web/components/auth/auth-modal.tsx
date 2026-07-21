@@ -53,10 +53,11 @@ export function AuthModal({ open, onOpenChange, trigger }: AuthModalProps) {
 
   async function handleGoogleSignIn() {
     const supabase = createClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    // Always return to the origin you're on (localhost vs production),
+    // not NEXT_PUBLIC_SITE_URL — otherwise local Google sign-in can bounce to prod.
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${siteUrl}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   }
 
@@ -77,7 +78,7 @@ export function AuthModal({ open, onOpenChange, trigger }: AuthModalProps) {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-(--glass-border) bg-(--deep-sea-light) px-4 py-3 text-(--text-primary) min-h-[44px]"
+            className="mt-1 w-full rounded-xl border border-(--glass-border) bg-(--deep-sea-light) px-4 py-3 text-(--text-primary) min-h-11"
           />
         </div>
         <div>
@@ -92,7 +93,7 @@ export function AuthModal({ open, onOpenChange, trigger }: AuthModalProps) {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-(--glass-border) bg-(--deep-sea-light) px-4 py-3 text-(--text-primary) min-h-[44px]"
+            className="mt-1 w-full rounded-xl border border-(--glass-border) bg-(--deep-sea-light) px-4 py-3 text-(--text-primary) min-h-11"
           />
         </div>
         {error && (
@@ -130,7 +131,7 @@ export function AuthModal({ open, onOpenChange, trigger }: AuthModalProps) {
             setMode(mode === "signin" ? "signup" : "signin");
             setError(null);
           }}
-          className="text-treasure-gold underline min-h-[44px]"
+          className="text-treasure-gold underline min-h-11"
         >
           {mode === "signin" ? "Create account" : "Sign in"}
         </button>
